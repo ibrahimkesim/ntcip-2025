@@ -1,0 +1,40 @@
+net-snmp'yi klasik sekilde kuruyoruz.
+./configure
+make
+sudo make install
+
+perl ile ilgili bir hata verirse asagidaki komut ile kuruyoruz. 
+sudo apt-get install libperl-dev 
+
+
+#Yararli link: https://github.com/jainvishal/agentx-tutorial
+
+#show default mibdirs
+net-snmp-config --default-mibdirs
+#mib dosyasinin duzgun oldugunu kontrol etmek icin
+snmptranslate -mALL -Tp -IR myTestTable
+
+#mib2c ile MIB'den C kodu olusturma
+#scalar
+env MIBS="+AGENTX-TUTORIAL-MIB" mib2c -c mib2c.scalar.conf agentxTutorial
+
+#table
+env MIBS="+AGENTX-TUTORIAL-MIB" mib2c -c mib2c.mfd.conf myTestTable
+
+env MIBS="+AGENTX-TUTORIAL-MIB" mib2c -c mfd-makefile.m2m agentxTutorial #makefile olusturacak
+
+env MIBS="+AGENTX-TUTORIAL-MIB" mib2c -c subagent.m2c agentxTutorial
+
+#subagent olustururken snmpd.conf (/etc/snmp/snmpd.conf) dosyasinda olmasi gereken iki onemli satir
+master  agentx
+agentxsocket tcp:localhost:1705
+#subagent baglantisi icin 
+./agentxTutorial -f -L -x  tcp:localhost:1705
+#her seyin dogru gittigini kontrol etmek icin
+snmpwalk -mALL -v1 -cpublic localhost agentxTutorial
+
+#INTEGER okumak icin
+snmpget -v 1 -c public localhost ISBAK-MIB::voltageThreshold.0
+#INTEGER yazmak icin
+snmpset -v 2c -c private localhost ISBAK-MIB::voltageThreshold.0 i 23
+

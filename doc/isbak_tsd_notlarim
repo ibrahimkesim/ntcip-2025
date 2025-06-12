@@ -1,0 +1,238 @@
+Colibri Board icin bilinmesi gerekenler:
+Colibri boardlara USB'den baglanabilmek icin JP17 ve JP19 jumper'larinin USB modda olmasi gerekiyor. bunun gibi baslangic bilgileri icin bkz. https://developer-archives.toradex.com/getting-started/module-1-from-the-box-to-the-shell/unboxing-and-setup-cables-colibri-evaluation-board-colibri-imx7?som=colibri-imx7&board=colibri-evaluation-board&os=linux&desktop=linux
+
+Colibri board'larin icerisine yeni imaj atmak icin bkz: https://developer-archives.toradex.com/knowledge-base/imx-recovery-mode#tab-colibri-imx7
+Basitce soyle:
+0- USB'lere mouse/klavye baglanir. VGA'ya monitor baglanir. USB diskten imaj atilacaksa USB disk USB'lerden birine takilir
+1- USB OTG portu (X29) host linux USB'sine USB kablo ile baglanir.
+2- Board'un elektrigi kesilir.
+3- Board kapali iken SW9 switchi basili tutulur ve ve board on/off dugmesiyle acilir. Acildiktan sonra da 6 saniye boyunca SW9 basili tutulur.
+4- Recovery moda gecilmis olduktan sonra Toradex Easy Installer klasorune gidilir ve recovery-linux.sh komutu calistirilir. 
+5- Komut calisinca ekrana Toradex Easy Installer Menusu cikar. Menuden ilgili imaj secilir ve yuklenir.
+Onemli bir not: bitbake ile olusturulan imaji flash diske atmadan once tar dosyasini mutlaka acmis olman lazim!!! Sakin unutma
+
+ssh -L 5901:127.0.0.1:5901 -N -f -l root 192.168.10.2
+config ethernet_00142d68954a_cable --ipv4 manual 192.168.1.2 255.255.255.0 192.168.1.1
+ACCEPT_FSL_EULA = "1"
+PARALLEL_MAKE = "-j 4"
+BB_NUMBER_THREADS = "4"
+
+#Ilk Qt uygulamasini cihaza atmak icin yapilanlar
+1. Sitedeki yonergeleri takip et 
+https://developer.toradex.com/linux-bsp/how-to/build-yocto/build-a-reference-image-with-yocto-projectopenembedded/
+1.1. Komutlari calistir
+$ mkdir ${HOME}/oe-core
+$ cd ${HOME}/oe-core
+$ repo init -u https://git.toradex.com/toradex-manifest.git -b dunfell-5.x.y -m tdxref/default.xml
+$ repo sync
+1.2. Komutu calistir
+$ . export
+1.3. ~/oe-core/build/conf/local.conf dosyasini ac ve asagidaki degisiklikleri yap. 
+1.3.1. MACHINE ?= "colibri-imx7-emmc"
+1.3.2. DL_DIR ?= "/media/abdullah/Data/downloads/yocto_downloads" 
+Bunu yapmazsan home klasorun cok siser ve yer kalmazsa derleme yarim kalir
+1.3.3. DISTRO ?= "tdx-xwayland"
+Aslinda tdx-xwayland-rt denedim ama diskimde yeterince yer olmadigi icin basaramadim
+1.3.4. asagidaki satirlari ekle. Boylece lisans sorularina otomatik evet demis olursun ve 4 paralel cekirdekle derlersin
+ACCEPT_FSL_EULA = "1"
+PARALLEL_MAKE = "-j 4"
+1.4. build klasorunde iken asagidaki komutu calistir
+
+image olusturmak icin:
+bitbake tdx-reference-multimedia-image
+
+SDK olusturmak icin:
+bitbake tdx-reference-multimedia-image -c populate_sdk
+
+Derleme basarili olursa deploy/sdk/ altinda asagidaki skripti gorursun. Bu skript qt cross-compile islemi icin gerekli SDK'yi uretecek.
+tdx-xwayland-glibc-x86_64-Reference-Multimedia-Image-armv7at2hf-neon-colibri-imx7-emmc-toolchain-5.7.0.sh
+1.5. Skripti calistir
+./tdx-xwayland-glibc-x86_64-Reference-Multimedia-Image-armv7at2hf-neon-colibri-imx7-emmc-toolchain-5.7.0.sh
+SDK'yi kurmak icin bir klasor soracak ve SDK'yi kuracak. Ben varsayilani degistirmedim.
+2. Sitedeki yonergeleri takip et
+https://developer.toradex.com/linux-bsp/how-to/gui/how-to-set-up-qt-creator-to-cross-compile-for-embedded-linux/
+2.1. Ubuntu'da surekli source komutu calistirmamak ve kalici ortam degiskenleri olusturmak icin ~/.profile dosyasi kullanilir.
+O dosyayi ac ve sonuna asagidaki satirlari ekle.
+echo $OE_QMAKE_CXX arm-tdx-linux-gnueabi-g++ -march=armv7-a -mthumb -mfpu=neon -mfloat-abi=hard --sysroot=/opt/tdx-xwayland/5.7.0/sysroots/armv7at2hf-neon-tdx-linux-gnueabi
+. /opt/tdx-xwayland/5.7.0/environment-setup-armv7at2hf-neon-tdx-linux-gnueabi
+
+Not: Sitedeki yonergeleri uygularken farkliliklara dikkat et. Ornegin bizim sdk'miz arm-angstrom-linux-gnueabi-g++ toolchainini degil arm-tdx-linux-gnueabi-g++ toolchainini olusturuyor. Dosyalarimiz da SDK'yi kurdugumuz yerde yani /opt/tdx-xwayland klasorunun altinda
+2.2. .profile dosyasini kaydettikten sonra host linux oturumunu kapat ve tekrar oturum ac. 
+2.3. Qt Creator ac ve sitedeki yonergelere benzer sekilde device, qt version ve kit eklemelerini yap. Normalde gcc derleyicisinin otomatik olarak gelmis olmasi lazim.
+2.4. Colibri board'u dogru ip adresi ile QtCreator'a tanitabilirsen olusturdugun Qt uygulamalarini dogrudan icerisine atacaktir. Deploy komutu ile.
+2.5. Device eklerken once "Create New Key Pair" sonra da "deploy public key" komutlarini calistirmayi unutma.
+2.6. Ekranda daha onceden startupa konmus uygulama bulundugu icin yeni attigin uygulamayi calistirsan da ekranda goremezsin. Gormek icin ilgili servisi durdurman gerekiyor. Ben henuz o servisi iptal etmeyi ogrenmedim ama basitce ps |aux komutuyla gordugum ".../usr/bin/appcontroller /usr/bin/b2qt" prosesini kill komutu ile oldurdum ve boardun home klasorune attigim uygulamayi calistirdim. Yasasin basardik!
+
+Onemli not:
+Eger configurasyonda bir degisiklik yapilarak tekrar derleme yapilmak istenirse once mevcut ciktilarin temizlenmesi gerekir. 
+Bunun icin asagidaki komutu calistir.
+bitbake -c cleanall tdx-reference-multimedia-image
+Daha sonra gerekli configurasyonlari yapip tekrar derleme komutu calistirilir
+bitbake tdx-reference-multimedia-image
+
+Qt 4.8.4 kurulum
+export PATH=/usr/bin/g++:$PATH
+./configure -prefix /media/abdullah/Data/Qt-4.8.4 -prefix-install -opensource -qt-sql-sqlite -platform linux-g++-64
+
+Toradex Easy Installer Kurulumu:
+Ilgili dokuman -> https://developer.toradex.com/easy-installer/how-to/loading-toradex-easy-installer/#linux
+Linkten zip dosyasini indir -> https://docs.toradex.com/104570-colibri-imx7-toradexeasyinstaller.zip
+Zipi ac ve klasore gir.
+
+Recovery mod'a girmek icin
+0- Board'un enerjisini kes. Yani on-off (SW7) dugmesinden kapat
+1- USB kablosunu X29 USB OTG portuna (Reset butonunun yaninda yer alan) ve kendi PC'nin USB'sine tak. 
+2- SW9 (Recovery mode) butonuna basili tutarken
+3- SW7 (on-off) dugmesine bas.
+4- 6 sn daha basili tuttuktan sonra SW9 dugmesini serbest birak.
+5- unzip edilmis klasorden ./recovery-linux.sh scriptini calistir.
+
+IP adresi degistirme:
+ifconfig eth0 192.168.1.2 netmask 255.255.255.0
+
+Can bus:
+Kvaser linux driver kurulumu icin onemli linkler:
+Secure boot bilgisayarlarda kvaser driver'ina izin verilmez. Izin verilmesi icin sertifika olusturup imzalamak gerekir. Linki inceleyiniz.
+https://www.kvaser.com/developer-blog/build-install-signed-kvaser-driver-modules/
+Guncel sdk, driverlar ve kurulum:
+https://www.kvaser.com/canlib-webhelp/section_install_linux.html 
+
+Faydali link:
+https://developer.toradex.com/linux-bsp/how-to/peripheral-access/can-linux/#flexcan-on-colibri-imx7
+Hiz ayarlama:
+ip link set can0 type can bitrate 250000
+Devreye alma/baslatma:
+ip link set can0 up
+Hiz ayarlama:
+ip link set can1 type can bitrate 250000
+Devreye alma/baslatma:
+ip link set can1 up
+cansend can0 01F#1122334455667788
+cansend can0 01F334455#1122334455667788
+candump can0,16050000:DFFFFFFF
+
+
+Frame buffer:
+setenv vidargs 'video=mxsfb:800x480M-16@60,pixclockpol=1'
+videomode=video=ctfb:x:640,y:480,depth:18,pclk:39722,le:48,ri:16,up:33,lo:10,hs:96,vs:2,sync:0,vmode:0
+
+Kernel Patch olusturma:
+Donanimlarda Colibri eval board'dan farkli yaptigimiz donanimsal degisiklikler icin kernel'a patch yazmamiz gerekmektedir. Bunun icin device tree'nin degismesi gerekmektedir.
+Yararli linkler:
+https://developer.toradex.com/linux-bsp/how-to/build-yocto/custom-meta-layers-recipes-and-images-in-yocto-project-hello-world-examples/
+Olusturdugun bir bitbake paketi varsa 
+build/conf/bblayers.conf dosyasin asagidaki gibi bir satir eklemen gerekir.
+${TOPDIR}/../layers/meta-customer \
+
+https://developer.toradex.com/linux-bsp/how-to/peripheral-access/can-linux/
+
+1. oe-core klasoru altinda yer alan asagidaki dtsi dosyasi uygun sekilde degistirilir.
+build/tmp/work/colibri_imx7_emmc-tdx-linux-gnueabi/linux-toradex/5.4.193+gitAUTOINC+f782992971-r0/git/arch/arm/boot/dts/imx7-colibri.dtsi
+2. degisiklikler yapildiktan sonra asagidaki dizine gecilir
+~/oe-core/build/tmp/work/colibri_imx7_emmc-tdx-linux-gnueabi/linux-toradex/5.4.193+gitAUTOINC+f782992971-r0/git
+3. Bu dizinde iken git diff komutuyla patch olusturulur
+git diff arch/arm/boot/dts/imx7-colibri.dtsi > ~/oe-core/layers/meta-customer/recipes-kernel/linux/linux-toradex/custom-display.patch
+4. Derleme baslatilir
+bitbake tdx-reference-multimedia-image
+
+Touchscreen calibration
+1. weston.ini dosyasi uygun sekilde olmali. libinput bolumu aktif olmali ve asagidaki iki satir yer almali
+vi /etc/xdg/weston/weston.ini
+[libinput]
+touchscreen_calibrator=true
+calibration_helper=/usr/bin/save-calibration.sh
+
+Uygun sekilde degilse bu sekilde degistirilmeli ve weston servisi tekrar baslatilmali.
+systemctl restart weston@root
+
+2. Asagidaki komut verilir
+weston-touch-calibrator
+Komut sanki hataliymis gibi bir iki mesaj cikar ama onemli degil.
+could not load cursor 'dnd-move'
+could not load cursor 'dnd-copy'
+could not load cursor 'dnd-none'
+device "/sys/devices/soc0/soc/30800000.aips-bus/30a20000.i2c/i2c-0/0-002c/input/input0/event0" - head "/dev/fb0"
+
+Komut cevabinin son satirinda touchscreen cihazinin surucu yolu vardir.
+3. Asagidaki komutla kalibrasyon baslatilir.
+weston-touch-calibrator /sys/devices/soc0/soc/30800000.aips-bus/30a20000.i2c/i2c-0/0-002c/input/input0/event0
+
+4. Cikan ekranda + isaretlerine sirasiyla basilir.
+
+
+
+
+Calismakta olan servislerin listelenmesi:
+systemctl list-units --type=service
+
+Seri port ayarlanmasi:
+stty -F /dev/ttymxc1 115200 cs8 -cstopb -parenb
+
+Seri porta yazmak:
+echo "AT\r" > /dev/ttymxc2
+
+Seri porttan okumak:
+cat < /dev/ttymxc2
+
+Cihazimiz ssh servisi olarak dropbear kullaniyor. Openssh filan degil.
+
+
+Statik ip ayari:
+Su dosyayi olustur: /etc/systemd/network/20-wired.network
+Icine sunlari yaz: (Istedigin ip/alt ag maskesi yazabilirsin)
+[Match]
+Name=eth0
+[Network]
+Address=172.16.1.23/24
+DHCP=no
+
+
+Tarih saat ayarlama:
+Varsayilan olarak Toradex kartlarin imajinda tarih saat senkronizasyonu acik geliyor.
+Tarih saatin elle ayarlanmasi isteniyorsa otomatik senkronizasyon servisi kalici olarak durdurulmalidir.
+Servisin dogru adini ogrenmek icin su komutu verebilirsin:
+systemctl list-unit-files --type=service | grep sync
+Muhtemelen listede soyle bir satir olur
+systemd-timesyncd.service              disabled
+
+Disable degilse disable etmek icin:
+sudo systemctl disable systemd-timesyncd.service
+
+Bundan sonra tarih saat elle veya baska bir programla set edilebilir.
+Saati komutla degistirmek icin asagidaki komut yeterlidir. RTC saatini de degistiriyor.
+timedatectl set-time "2023-04-07 11:52:05"
+Saat dilimlerini listelemek icin:
+timedatectl list-timezones|grep Istanbul
+
+Saat dilimi secmek icin:
+timedatectl set-timezone Europe/Istanbul
+
+Bazi paketlerin image'e eklenmesi:
+NTCIP (SNMP) kutuphanesi icin net-snmp eklenmesi gerekiyor. Bu paketler layers'ta yer aldigi icin sadece kurmak yeterli. Bunun icin local.conf dosyasina satir eklenmelidir.
+IMAGE_INSTALL_append = " net-snmp net-snmp-server net-snmp-mibs"
+
+Kendi olusturdugumuz ornek bir paket:
+IMAGE_INSTALL:append = " hello-world"
+
+ppp driver. Haberlesme kartini modem olarak kullanmak icin.
+IMAGE_INSTALL_append = " ppp"
+
+Zip dosyalarini acmak icin. 
+IMAGE_INSTALL_append = " zlib"
+
+Calisirken cihaz uzerinde debug yapabilmek icin:
+IMAGE_INSTALL_append = " rsync"
+
+
+Derlemeden oncede terminalde asagidaki komutlari kostur:
+. /opt/tdx-xwayland/5.7.3/environment-setup-armv7at2hf-neon-tdx-linux-gnueabi
+bash /opt/tdx-xwayland/5.7.3/sysroots/x86_64-tdxsdk-linux/environment-setup.d/cmake.sh
+
+
+Cihazda haberlesmeservisini calistirmadan once bunlari calistir:
+can_script.sh
+/cpu_app# ./cpu_app_core
+
+HHiisbak86*
+
+make --no-print-directory

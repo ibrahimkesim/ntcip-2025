@@ -1,0 +1,19 @@
+[Unit]
+Description="Haberlesme Karti Service"
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=60
+User=root
+SyslogIdentifier=haberlesmekarti.service
+WorkingDirectory=/home/root
+ExecStartPre=/bin/systemctl restart snmpd.service
+ExecStartPre=/bin/sleep 6
+ExecStartPre=/bin/bash -c 'if [ -f /home/root/isbak-ntcip-2a9/haberlesme_karti ]; then /bin/cp /home/root/isbak-ntcip-2a9/haberlesme_karti /home/root/isbak-ntcip-2a9/haberlesme_karti_running; fi'
+ExecStart=/home/root/isbak-ntcip-2a9/haberlesme_karti_running
+WatchdogSec=2m
+[Install]
+WantedBy=multi-user.target

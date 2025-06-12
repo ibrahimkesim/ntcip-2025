@@ -1,0 +1,1697 @@
+--*********************************************************************
+-- Filename: ISBAKV001.MIB
+-- Date: Nov 12, 2022
+-- Description: This MIB defines the Isbak Actuated Signal Controller
+-- Objects
+--Nov 12, 2022
+-- SubJunction ve Struct iliskileri eklendi
+-- junction ve coord klasorleri eklendi
+--17 Mart 2023
+--30 Mart 2023
+-- pattern ve signalstate tabloları güncellendi
+-- FATIH EDITION 
+--*********************************************************************
+
+
+kgm-ortak DEFINITIONS ::= BEGIN
+
+IMPORTS
+DisplayString, ifIndex
+FROM RFC1213-MIB
+OBJECT-TYPE
+FROM RFC-1212
+Integer32, IpAddress,Opaque, Counter, enterprises,Gauge
+FROM RFC1155-SMI
+IMPORTS
+cabinetEnvironDevicesTable, ascLineVolts, vehicleDetectorStatusGroupTable, pedestrianDetectorStatusGroupTable
+FROM NTCIP1202-v03;
+
+kgm                OBJECT IDENTIFIER ::= { enterprises 59873 }
+transportation       OBJECT IDENTIFIER ::= { kgm 4 }
+devices              OBJECT IDENTIFIER ::= { transportation 2 }
+asc                  OBJECT IDENTIFIER ::= { devices 1 }
+
+driverModule      OBJECT IDENTIFIER ::= { asc 1 }
+channel					OBJECT IDENTIFIER ::= { asc 2 }
+phase                   OBJECT IDENTIFIER ::= { asc 3 }
+signalState             OBJECT IDENTIFIER ::= { asc 4 }
+user                    OBJECT IDENTIFIER ::= { asc 5 }
+dedectorModule			OBJECT IDENTIFIER ::= { asc 6 }
+plan                	OBJECT IDENTIFIER ::= { asc 7 }
+junction                OBJECT IDENTIFIER ::= { asc 8 }
+coord                	OBJECT IDENTIFIER ::= { asc 9 }
+customTimeBase          OBJECT IDENTIFIER ::= { asc 10 }
+myNotifications        OBJECT IDENTIFIER ::= { asc  11 }
+myNotificationObjects  OBJECT IDENTIFIER ::= { myNotifications 0 }
+
+
+
+
+--1.1.	 Kabin Parametreleri
+
+-- 1.1.1.	Sürücü modül durumu parametresi
+driverModuleStatus   OBJECT-TYPE
+	SYNTAX INTEGER (0..65535)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Sürücü modulu durum bilgisi yer alir.
+		Modul grup numarasina gore 16 modul bilgisini icerir.
+		Bit = 0 ise modul calismiyor.
+		Bit = 1 ise modul calisiyor.
+		Bit 15: Module 16
+		Bit 14: Module 15
+		Bit 13: Module 14
+		Bit 12: Module 13
+		Bit 11: Module 12
+		Bit 10: Module 11
+		Bit 9 : Module 10
+		Bit 8 : Module 9
+		Bit 7 : Module 8
+		Bit 6 : Module 7
+		Bit 5 : Module 6
+		Bit 4 : Module 5
+		Bit 3 : Module 4
+		Bit 2 : Module 3
+		Bit 1 : Module 2
+		Bit 0 : Module 1
+
+<Object Identifier> KGM OID	"
+::= { driverModule 1 }
+
+
+--1.2.	Kanal Parametreleri
+
+
+--1.2.2.	Maksimum Kanal Arıza Durum Sayısı
+maxTrafficLightFaultStatusGroups OBJECT-TYPE
+SYNTAX INTEGER (1..65535)
+ACCESS read-only
+STATUS mandatory
+DESCRIPTION "<Definition>
+Maksimum kanal arıza durum sayısı.  trafficLightFaultStatusIndex maksimum değerini aşamaz.
+<Object Identifier> KGM OID "
+::= { channel 1}
+
+--1.2.3.	Kanal Arıza Durum Tablosu
+
+trafficLightFaultStatusTable OBJECT-TYPE
+	SYNTAX SEQUENCE OF TrafficLightFaultStatusEntry
+	ACCESS not-accessible
+	STATUS mandatory
+	DESCRIPTION "<Definition> Lamba grubunun arıza durum
+		tablosu
+<TableType> static
+<Object Identifier> KGM OID"
+::= { channel 2 }
+
+trafficLightFaultStatusEntry OBJECT-TYPE
+	SYNTAX TrafficLightFaultStatusEntry
+	ACCESS not-accessible
+	STATUS mandatory
+DESCRIPTION "<Definition> Lamba grubunun arıza durum
+Entry’si
+
+<Object Identifier> KGM OID
+<Unit> "
+INDEX { trafficLightFaultStatusIndex }
+::= {  trafficLightFaultStatusTable 1 }
+
+TrafficLightFaultStatusEntry ::= SEQUENCE {
+	trafficLightFaultIndex INTEGER,
+	trafficLightFaultChannelNumber INTEGER,
+	trafficLightFaultGreenStatus INTEGER,
+	trafficLightFaultYellowStatus INTEGER,
+	trafficLightFaultRedStatus INTEGER
+	}
+
+--1.2.3.1.	Kanal arıza durum numara parametresi
+trafficLightFaultStatusIndex		OBJECT-TYPE
+	SYNTAX INTEGER (1..65535)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+Arıza tablosu id bilgisi
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trafficLightFaultStatusEntry 1 }
+
+--1.2.3.2.	Kanal numarası parametresi
+trafficLightFaultChannelNumber OBJECT-TYPE
+	SYNTAX INTEGER (1..255)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>  Kanal tablosundaki
+channelNumber bilgisini içerir.
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trafficLightFaultStatusEntry 2 }
+
+--1.2.3.3.	Trafik lambası yeşil arıza durumu parametresi
+trafficLightFaultGreenStatus OBJECT-TYPE
+	SYNTAX INTEGER (0..255)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		0: Arıza yok
+		Bit 1: Lamba arızası(Kritik olmayan)
+		Bit 2: Kritik lamba arızası
+		Bit 3: Tüm lamba arızası
+		Bit 4: Çakışma var
+		Bit 5: Kısa devre arızası (Sinyal çıkış anahtarı kısa devre / sinyal grup çıkışı kısa devre veya haricen kablo kısa devresi)
+		Bit 6: Sinyal çıkış anahtarı açık devre / sinyal grup
+çıkışı açık devre
+	Bit 7: Rez.
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trafficLightFaultStatusEntry 3 }
+
+--1.2.3.4.	Trafik lambası sarı arıza durumu parametresi
+trafficLightFaultYellowStatus OBJECT-TYPE
+	SYNTAX INTEGER (0..255)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+1 Byte
+		Bit 0: Arıza yok
+		Bit 1: Lamba arızası(Kritik olmayan)
+		Bit 2: Kritik lamba arızası
+		Bit 3: Tüm lamba arızası
+		Bit 4: Çakışma var
+		Bit 5: Kısa devre arızası (Sinyal çıkış anahtarı kısa devre / sinyal grup çıkışı kısa devre veya haricen kablo kısa devresi)
+		Bit 6: Sinyal çıkış anahtarı açık devre / sinyal grup
+çıkışı açık devre
+		Bit 7: Rez.
+
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trafficLightFaultStatusEntry 4 }
+
+--1.2.3.5.	Trafik lambası kırmızı arıza durumu parametresi
+trafficLightFaultRedStatus OBJECT-TYPE
+	SYNTAX INTEGER (0..255)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+1 Byte
+		Bit 0: Arıza yok
+		Bit 1: Lamba arızası(Kritik olmayan)
+Bit 2: Kritik lamba arızası
+		Bit 3: Tüm lamba arızası
+		Bit 4: Çakışma var
+Bit 5: Kısa devre arızası (Sinyal çıkış anahtarı kısa devre / sinyal grup çıkışı kısa devre veya haricen kablo kısa devresi)
+		Bit 6: Sinyal çıkış anahtarı açık devre / sinyal grup
+çıkışı açık devre
+		Bit 7: Rez.
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trafficLightFaultStatusEntry 5 }
+
+--1.2.4.	Maksimum Kanal Hata Bayrak Sayısı
+maxChannelErrorFlagsGroups OBJECT-TYPE
+SYNTAX INTEGER (1..65535)
+ACCESS read-only
+STATUS mandatory
+DESCRIPTION "<Definition>
+Maksimum kanal arıza durum sayısı.  trafficLightFaultStatusIndex maksimum değerini aşamaz.
+<Object Identifier> KGM OID"
+::= { channel 3}
+
+--1.2.5.	Kanal Hata Bayrak Tablosu
+
+channelErrorFlagsTable OBJECT-TYPE
+	SYNTAX SEQUENCE OF ChannelErrorFlagsEntry
+	ACCESS not-accessible
+	STATUS mandatory
+	DESCRIPTION "<Definition>    "
+::= { channel 4 }
+
+channelErrorFlagsEntry OBJECT-TYPE
+	SYNTAX ChannelErrorFlagsEntry
+	ACCESS not-accessible
+	STATUS mandatory
+DESCRIPTION "<Definition>
+<Unit> "
+INDEX { errorgroupNumber }
+::= {  channelErrorFlagsTable  1 }
+
+ChannelErrorFlagsEntry::= SEQUENCE {
+	errorgroupNumber INTEGER,(0-255)
+	redLampAllFailure INTEGER,(0-255)
+	greenLampAllFailure INTEGER,(0-255)
+	yellowLampAllFailure INTEGER,(0-255)
+	undesiredRedSignal INTEGER,(0-255)
+	undesiredGreenSignal INTEGER,(0-255)
+	undesiredYellowSignal INTEGER(0-255)}
+
+
+--1.2.5.1.	Kanal hata grup numarası parametresi
+
+errorgroupNumber		OBJECT-TYPE
+	SYNTAX INTEGER (1..65535)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+Kanal hata flag tablo id bilgisi
+<Object Identifier> KGM OID
+<Unit>  "
+::= { channelErrorFlagsEntry 1 }
+
+
+--1.2.5.2.	Tüm kırmızı lamba arıza durumu
+
+redLampAllFailure		OBJECT-TYPE
+	SYNTAX INTEGER (1..65535)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+Kanal Kırmızı arıza durumları
+Bit=1 ise ilgili kanal arızası var.
+Bit=0 ise ilgili kanal arızası yok.
+Bit 7: Channel # = (errorgroupNumber * 8)
+Bit 6: Channel # = (errorgroupNumber * 8) - 1
+Bit 5: Channel # = (errorgroupNumber * 8) - 2
+Bit 4: Channel # = (errorgroupNumber * 8) - 3
+Bit 3: Channel # = (errorgroupNumber * 8) - 4
+Bit 2: Channel # = (errorgroupNumber * 8) - 5
+Bit 1: Channel # = (errorgroupNumber * 8) - 6
+Bit 0: Channel # = (errorgroupNumber * 8) – 7
+
+<Object Identifier> KGM OID
+<Unit>  "
+::= { channelErrorFlagsEntry 2 }
+
+
+
+
+--1.2.5.3.	Tüm yeşil lamba arıza durumu
+
+greenLampAllFailure		OBJECT-TYPE
+	SYNTAX INTEGER (1..65535)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+Kanal Yeşil arıza durumları
+Bit=1 ise ilgili kanal arızası var.
+Bit=0 ise ilgili kanal arızası yok.
+Bit 7: Channel # = (errorgroupNumber * 8)
+Bit 6: Channel # = (errorgroupNumber * 8) - 1
+Bit 5: Channel # = (errorgroupNumber * 8) - 2
+Bit 4: Channel # = (errorgroupNumber * 8) - 3
+Bit 3: Channel # = (errorgroupNumber * 8) - 4
+Bit 2: Channel # = (errorgroupNumber * 8) - 5
+Bit 1: Channel # = (errorgroupNumber * 8) - 6
+Bit 0: Channel # = (errorgroupNumber * 8) – 7
+
+<Object Identifier> KGM OID
+<Unit>  "
+::= { channelErrorFlagsEntry 3 }
+
+
+
+
+
+
+--1.2.5.4.	Tüm sarı lamba arıza durumu
+
+yellowLampAllFailure		OBJECT-TYPE
+	SYNTAX INTEGER (1..65535)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+Kanal Sarı arıza durumları
+Bit=1 ise ilgili kanal arızası var.
+Bit=0 ise ilgili kanal arızası yok.
+Bit 7: Channel # = (errorgroupNumber * 8)
+Bit 6: Channel # = (errorgroupNumber * 8) - 1
+Bit 5: Channel # = (errorgroupNumber * 8) - 2
+Bit 4: Channel # = (errorgroupNumber * 8) - 3
+Bit 3: Channel # = (errorgroupNumber * 8) - 4
+Bit 2: Channel # = (errorgroupNumber * 8) - 5
+Bit 1: Channel # = (errorgroupNumber * 8) - 6
+Bit 0: Channel # = (errorgroupNumber * 8) – 7
+
+<Object Identifier> KGM OID
+<Unit>  "
+::= { channelErrorFlagsEntry 4 }
+
+
+
+
+--1.2.5.5.	İstemsiz kırmızı sinyal
+
+undesiredRedSignal			OBJECT-TYPE
+	SYNTAX INTEGER (1..65535)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+Kanal İstemsiz kırmızı sinyal durumları
+Bit=1 ise ilgili kanalda istemsiz sinyal vardır.
+Bit=0 ise ilgili kanalda istemsiz sinyal yoktur.
+Bit 7: Channel # = (errorgroupNumber * 8)
+Bit 6: Channel # = (errorgroupNumber * 8) - 1
+Bit 5: Channel # = (errorgroupNumber * 8) - 2
+Bit 4: Channel # = (errorgroupNumber * 8) - 3
+Bit 3: Channel # = (errorgroupNumber * 8) - 4
+Bit 2: Channel # = (errorgroupNumber * 8) - 5
+Bit 1: Channel # = (errorgroupNumber * 8) - 6
+Bit 0: Channel # = (errorgroupNumber * 8) – 7
+
+<Object Identifier> KGM OID
+<Unit>  "
+::= { channelErrorFlagsEntry 5 }
+
+
+
+--1.2.5.6.	İstemsiz yeşil sinyal
+
+undesiredGreenSignal  	OBJECT-TYPE
+	SYNTAX INTEGER (1..65535)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+Kanal İstemsiz yeşil sinyal durumları
+Bit=1 ise ilgili kanalda istemsiz sinyal vardır.
+Bit=0 ise ilgili kanalda istemsiz sinyal yoktur.
+Bit 7: Channel # = (errorgroupNumber * 8)
+Bit 6: Channel # = (errorgroupNumber * 8) - 1
+Bit 5: Channel # = (errorgroupNumber * 8) - 2
+Bit 4: Channel # = (errorgroupNumber * 8) - 3
+Bit 3: Channel # = (errorgroupNumber * 8) - 4
+Bit 2: Channel # = (errorgroupNumber * 8) - 5
+Bit 1: Channel # = (errorgroupNumber * 8) - 6
+Bit 0: Channel # = (errorgroupNumber * 8) – 7
+
+<Object Identifier> KGM OID
+<Unit>  "
+::= { channelErrorFlagsEntry 6 }
+
+
+
+--1.2.5.7.	İstemsiz sarı sinyal
+
+undesiredYellowSignal   OBJECT-TYPE
+	SYNTAX INTEGER (1..65535)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+Kanal İstemsiz sarı sinyal durumları
+Bit=1 ise ilgili kanalda istemsiz sinyal vardır.
+Bit=0 ise ilgili kanalda istemsiz sinyal yoktur.
+Bit 7: Channel # = (errorgroupNumber * 8)
+Bit 6: Channel # = (errorgroupNumber * 8) - 1
+Bit 5: Channel # = (errorgroupNumber * 8) - 2
+Bit 4: Channel # = (errorgroupNumber * 8) - 3
+Bit 3: Channel # = (errorgroupNumber * 8) - 4
+Bit 2: Channel # = (errorgroupNumber * 8) - 5
+Bit 1: Channel # = (errorgroupNumber * 8) - 6
+Bit 0: Channel # = (errorgroupNumber * 8) – 7
+
+<Object Identifier> KGM OID
+<Unit>  "
+::= { channelErrorFlagsEntry 7 }
+
+
+--1.3.	Sinyal Durum Parametreleri
+
+--1.3.1.	Maksimum Sinyal Durum Sayısı
+maxSignalState OBJECT-TYPE
+SYNTAX INTEGER (1.. 65535)
+ACCESS read-only
+STATUS mandatory
+DESCRIPTION "<Definition>
+Maksimum sinyal durum sayısına eşittir. signalStateIndex maksimum değerini aşamaz
+<Object Identifier> KGM OID "
+::= { signalState 1 }
+
+
+--1.3.2.	Sinyal Durum Tablosu
+signalStateTable OBJECT-TYPE
+	SYNTAX SEQUENCE OF SignalStateEntry
+	ACCESS not-accessible
+	STATUS mandatory
+	DESCRIPTION "<Definition> Sinyal durum tablosu
+<TableType> static
+<Object Identifier> KGM OID "
+::= { signalState 2 }
+
+signalStateEntry	OBJECT-TYPE
+	SYNTAX SignalStateEntry
+	ACCESS not-accessible
+	STATUS mandatory
+DESCRIPTION "<Definition> Sinyal durum tablo Entry’si
+<Object Identifier> KGM OID
+<Unit> "
+INDEX { signalStateIndex }
+::= {  signalStateTable 1 }
+
+SignalStateEntry ::= SEQUENCE {
+	signalStateIndex INTEGER,
+	signalStatePatternNo INTEGER,
+	signalStateExecMode	INTEGER,
+	signalStatePlanMode	INTEGER,
+	signalStateStructure INTEGER,
+	signalStatePlan INTEGER,
+	signalStateStage OCTET STRING,
+	signalStateNextStage	OCTET STRING,
+	signalStateStep	INTEGER,
+	signalStateTransitionFlag	INTEGER,
+	signalStateTransitionStep	INTEGER,
+	signalStateElapsedTime OCTET STRING,
+	signalStateRemainingTime	OCTET STRING,
+	signalStateStepTime	INTEGER,
+	signalStateCycleTime	INTEGER,
+	patternTimeToNextCycle INTEGER,	
+	signalPlanLastChangeTime Counter
+}
+
+--1.3.2.1.	Sinyal durum tablosu indeks parametresi
+signalStateIndex OBJECT-TYPE
+	SYNTAX INTEGER (1..65535)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition> Sinyal durum tablosu
+id bilgisi
+<Object Identifier> KGM OID
+<Unit>  "
+::= { signalStateEntry 1 }
+
+--1.3.2.2.	Patern numara parametresi
+signalStatePatternNo OBJECT-TYPE
+	SYNTAX INTEGER (1..255)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition> Sinyal durum tablosu 
+patern numara bilgisi. 
+ 
+<Object Identifier> 1.3.6.1.4.1.59873.4.2.1.1.8.1.2
+<Unit>  "
+::= { signalStateEntry 2  } 
+
+
+
+
+--1.3.2.2.	Yürütülen mod parametresi
+signalStateExecMode OBJECT-TYPE
+	SYNTAX INTEGER {
+
+		none (0),
+		init(1),
+		initialFlash(2),
+		program(3),
+		flash(4),
+		failFlash(5),
+		allYellow(6),
+		allRed(7),
+		allDark(8),
+		testOutputs(9),
+		programError(10),
+		testSignalPlan(11) }
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Hangi modda olduğu bilgisini içerir.
+		Cihaz program modunda ise detayda hangi modda çalıştığı bilgisi signalStatePlanMode nesnesinden okunur.
+		None (0)
+		Init(1): Cihaz yeni açıldı henüz çıkışları sürmeye
+		başlamadı
+		InitialFlash(2): Cihaz yeni açılmış veya yapı değişikliği olmuş ve başlangıç flaşı yapıyor.
+		Program(3): Cihaz haftalık plandaki düzene göre çalışıyor.
+		Flash(4): Cihaz flaş moduna zorlanmış
+		FailFlash(5): Cihaz arızi bir durumdan dolayı flaş
+		moduna geçmiş
+		AllYellow(6): Tüm çıkışlar sarı
+		AllRed(7): Tüm çıkışlar kırmızı
+		AllDark(8): Tüm çıkışlar sönük
+		TestOutputs(9): Çıkışların lambalara doğru bir şekilde bağlanıp bağlanmadığını kontrol etmek için sıra ile her bir çıkışa yeşil, sarı, kırmızı, kırmızı sarı renklerinin verilmesidir.
+		ProgramError(10): Sinyal programcısı tarafından yüklenen sinyal planında bir hata olması durumunda geçilen mod.
+		TestSignalPlan(11): Bu modda sinyal çıkışları kapalıdır. Diğer her şey program modunda çalışmaktadır.
+
+	<Object Identifier> KGM OID
+	<Unit>  "
+::= { signalStateEntry 3 }
+
+--1.3.2.4.	Planlanan mod parametresi
+signalStatePlanMode OBJECT-TYPE
+	SYNTAX INTEGER {
+		fixedPlan(0),
+		halfActuated(1),
+		fullyActuated(2),
+		centralAdaptive(3),
+		flashing(4),
+		dark(5) }
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		fixedPlan(0): Multi Plan(sabit süreli), sensörler devre dışıdır. Faz süreleri haftalık planda belirlenen sürelere göre değişmektedir.
+		halfActuated(1): Kavşağın bazı kollarında sensör bulunmakta(loop dedektör, yaya butonu vb.) bazı kollarında ise sensör bulunmayabilmektedir. Sinyal planındaki bazı fazlar istenirse pas geçilebilmektedir.
+		fullyActuated(2): Kavşağın bütün kollarında sensör bulunmaktadır. Sinyal planındaki bütün fazlar açılmakta ve talep olması durumunda max süreye kadar çalıştırılmaktadır.
+		centralAdaptive(3): Bu modda plan süreleri merkezi bir program tarafından üretilmekte ve cihaz tarafından uygulanmaktadır.
+		flashing(4): Flaşlı çalışma(Gece flaşı gibi)
+		dark(5): Çıkışların kapalı olduğu mod(Sadece belli saatlerde işletilen kavşakların olması durumu)
+
+	<Object Identifier> KGM OID
+	<Unit>  "
+::= { signalStateEntry 4 }
+
+
+--1.3.2.5.	Yapı parametresi
+signalStateStructure OBJECT-TYPE
+	SYNTAX INTEGER (1..255)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Çalışmakta olan yapı
+<Object Identifier> KGM OID
+<Unit>  "
+::= { signalStateEntry 5 }
+
+--1.3.2.6.	Plan parametresi
+signalStatePlan OBJECT-TYPE
+	SYNTAX INTEGER (1..255)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Çalışmakta olan plan
+<Object Identifier> KGM OID
+<Unit>  "
+::= { signalStateEntry 6 }
+
+--1.3.2.7.	Faz parametresi
+signalStateStage OBJECT-TYPE
+	SYNTAX OCTET STRING
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Türkiyedeki faza karşılıktır.
+		Çalışmakta olan faz veya fazlar.
+	<Object Identifier> KGM OID
+	<Unit>  "
+::= { signalStateEntry 7 }
+
+--1.3.2.8.	Sonraki faz parametresi
+signalStateNextStage OBJECT-TYPE
+	SYNTAX OCTET STRING
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Bir sonraki fazı veya fazları ifade eder.
+<Object Identifier> KGM OID
+<Unit>  "
+::= { signalStateEntry 8 }
+
+--1.3.2.9.	Adım parametresi
+signalStateStep OBJECT-TYPE
+	SYNTAX INTEGER (1..255)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Çalışmakta olan adım
+		0 yada 255  = Uygulanamaz
+	<Object Identifier> KGM OID
+	<Unit>  "
+::= { signalStateEntry 9 }
+
+--1.3.2.10.	Geçiş adımı bayrak parametresi
+signalStateTransitionFlag OBJECT-TYPE
+	SYNTAX INTEGER (0..255)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Çalışmakta olan adımın geçiş adımı olup olmadığı bilgisini içerir.
+ <Object Identifier> KGM OID
+<Unit>  "
+::= { signalStateEntry 10 }
+
+--1.3.2.11.	Geçiş adımı parametresi
+signalStateTransitionStep OBJECT-TYPE
+	SYNTAX INTEGER (0..255)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Geçiş adımı numarası
+<Object Identifier> KGM OID
+<Unit>  "
+::= { signalStateEntry 11 }
+
+--1.3.2.12.	Mevcut adım geçen süre parametresi
+signalStateElapsedTime OBJECT-TYPE
+	SYNTAX OCTET STRING
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+	Mevcut adım veya adımların başladığı andan itibaren geçen süre
+<Object Identifier> KGM OID
+<Unit>  "
+::= { signalStateEntry 12 }
+
+--1.3.2.13.	Mevcut adım kalan süre parametresi
+signalStateRemainingTime OBJECT-TYPE
+	SYNTAX OCTET STRING
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Mevcut adım veya adımların kalan süresi
+<Object Identifier> KGM OID
+<Unit>  "
+::= { signalStateEntry 13 }
+
+--1.3.2.14.	Toplam adım süresi parametresi
+signalStateStepTime OBJECT-TYPE
+	SYNTAX INTEGER (0..255)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Adımın toplam süresi
+		0 yada 255  = Uygulanamaz
+<Object Identifier> KGM OID
+<Unit>  "
+::= { signalStateEntry 14 }
+
+--1.3.2.15.	Devre süresi parametresi
+signalStateCycleTime OBJECT-TYPE
+	SYNTAX INTEGER (0..255)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Devre süresi
+<Object Identifier> KGM OID
+<Unit>  "
+::= { signalStateEntry 15 }
+
+--1.3.2.16.	Yeşil dalga kalan süre parametresi
+patternTimeToNextCycle OBJECT-TYPE
+	SYNTAX INTEGER (0..255)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Yeşil dalga durumunda sonraki peryodun başlangıcına
+		kalan süre(sn).
+<Object Identifier> KGM OID
+<Unit>  "
+::= { signalStateEntry 16 }
+
+
+--1.3.2.17.	Sinyal planı son değişim zamanı
+signalPlanLastChangeTime OBJECT-TYPE
+	SYNTAX OCTET STRING
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+
+<Object Identifier> KGM OID
+<Unit> second"
+::= { signalStateEntry 17 }
+
+
+--1.3.3.	Sinyal Planı Son Değişim Zaman Bilgisi
+signalPlanLastChangeTimes OBJECT-TYPE
+SYNTAX OCTET STRING
+ACCESS read-only
+STATUS mandatory
+DESCRIPTION "<Definition>
+	 Sinyal planının son değiştirildiği zaman bilgisi
+<Object Identifier> KGM OID "
+::= {  signalState 3    }
+
+
+--1.4.	 Pattern Parametreleri
+
+
+--1.4.1.	Maksimum Pattern Sayısı
+maxTrPattern OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-only
+STATUS mandatory
+DESCRIPTION "<Definition>
+	Maksimum pattern sayisina esittir. patternIndex maksimum degerini asamaz
+<Object Identifier> KGM OID "
+::= { coord 1 }
+
+
+
+--1.4.2.	Pattern Tablosu
+
+trPatternTable	OBJECT-TYPE
+	SYNTAX SEQUENCE OF TrPatternEntry
+	ACCESS not-accessible
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+	<TableType> static
+	<Object Identifier> KGM OID "
+::= { coord 2 }
+
+trPatternEntry OBJECT-TYPE
+	SYNTAX TrPatternEntry
+	ACCESS not-accessible
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+
+	<Object Identifier> KGM OID
+	<Unit> "	INDEX {subJunctionNumber, patternIndex }
+::= {  trPatternTable 1 }
+
+TrPatternEntry::= SEQUENCE {
+	subJunctionNumber INTEGER,
+	patternIndex INTEGER,
+	patternEnabled INTEGER,
+	patternExecMode INTEGER,
+	patternPlanMode INTEGER,
+	patternStage OCTET STRING,
+	patternStruct INTEGER,
+	patternPlanNumber INTEGER,
+	patternSync INTEGER,
+	patternOffsetTime INTEGER,
+	patternStageCount INTEGER,
+	patternStageTime OCTET STRING,
+	patternStageSensorFailureMask OCTET STRING,
+	patternStartDate Counter,
+	patternEndDate Counter,
+	patternGreenwaveCycleTime INTEGER,
+	patternGreenwaveStageId INTEGER,
+	patternGreenWaveReturnStageId INTEGER,
+	patternSensorEnable INTEGER,
+	patternSensorSupervision INTEGER,
+	patternOutputSupervision INTEGER,
+	}
+
+
+
+--1.4.2.1.	Alt kavşak numarası
+subJunctionNumber OBJECT-TYPE
+	SYNTAX INTEGER (1..255)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition> Sinyal programlama tablo id
+bilgisi
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 1 }
+
+--1.4.2.2.	 Pattern indeks parametresi
+patternIndex OBJECT-TYPE
+	SYNTAX INTEGER (1..255)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition> Sinyal programlama tablo id
+bilgisi
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 2 }
+
+--1.4.2.3.	 Pattern durum parametresi
+patternEnabled OBJECT-TYPE
+	SYNTAX INTEGER (0..1)
+	ACCESS read-write
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		İlgili değişikliğin uygulanıp uygulanmayacağı
+		0: İlgili pattern uygulanmayacak.
+		1: İlgili pattern uygulanacak.
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 3 }
+
+
+--1.4.2.4.	Pattern çalışma modu parametresi
+patternExecMode OBJECT-TYPE
+	SYNTAX INTEGER {
+program(3),
+		flash(4),
+		failFlash(5),
+		allYellow(6),
+		allRed(7),
+allDark(8),
+testOutputs(9),
+testSignalPlan(11),
+fixedTime(12)}
+	ACCESS read-write
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+Hangi modda olduğu bilgisini içerir.
+Program(3): Cihaz haftalık plandaki düzene göre çalışıyor.
+		Flash(4): Cihaz flaş moduna zorlanmış
+		FailFlash(5): Cihaz arızi bir durumdan dolayı flaş
+moduna geçmiş
+		AllYellow(6): Tüm çıkışlar sarı
+		AllRed(7): Tüm çıkışlar kırmızı
+AllDark(8): Tüm çıkışlar sönük
+TestOutputs(9): Çıkışların lambalara doğru bir şekilde bağlanıp bağlanmadığını kontrol etmek için sıra ile her bir çıkışa yeşil, sarı, kırmızı, kırmızı sarı renklerinin verilmesidir.
+TestSignalPlan(11): Bu modda sinyal çıkışları kapalıdır. Diğer her şey program modunda çalışmaktadır.
+FixedTime(12): Sabit süreli mod.
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 4 }
+
+
+
+--1.4.2.5.	Pattern plan mod parametresi
+patternPlanMode OBJECT-TYPE
+	 SYNTAX INTEGER {
+		FixedPlan(0),
+		HalfActuated(1),
+		FullyActuated(2),
+		CentralAdaptive(3),
+		Flashing(4),
+		Dark(5) }
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		FixedPlan(0): Multi Plan(sabit süreli), sensörler devre dışıdır. Faz süreleri haftalık planda belirlenen sürelere göre değişmektedir.
+		HalfActuated(1): Kavşağın bazı kollarında sensör bulunmakta(loop dedektör, yaya butonu vb.) bazı kollarında ise sensör bulunmayabilmektedir. Sinyal planındaki bazı fazlar istenirse pas geçilebilmektedir.
+		FullyActuated(2): Kavşağın bütün kollarında sensör bulunmaktadır. Sinyal planındaki bütün fazlar açılmakta ve talep olması durumunda max süreye kadar çalıştırılmaktadır.
+		CentralAdaptive(3): Bu modda plan süreleri merkezi bir program tarafından üretilmekte ve cihaz tarafından uygulanmaktadır.
+		Flashing(4): Flaşlı çalışma(Gece flaşı gibi)
+		Dark(5): Çıkışların kapalı olduğu mod(Sadece belli saatlerde işletilen kavşakların olması durumu)
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 5 }
+
+
+
+--1.4.2.6.	Pattern fazları parametresi
+patternStage OBJECT-TYPE
+	SYNTAX OCTET STRING
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+Her bir octet bir faz numarasını belirtir.
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 6 }
+
+
+
+--1.4.2.7.	Pattern yapı parametresi
+patternStruct OBJECT-TYPE
+	SYNTAX INTEGER (0..255)
+	ACCESS read-write
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Geçilmesi istenilen yapı
+		255 değeri yapı değişikliği istenmediği anlamına
+gelir.
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 7 }
+
+--1.4.2.8.	 Pattern plan numara parametresi
+patternPlanNumber OBJECT-TYPE
+	SYNTAX INTEGER (0..255)
+	ACCESS read-write
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+Geçilmesi istenilen plan
+		255 değeri plan değişikliği istenmediği anlamına
+		gelir.
+<Object Identifier> KGM OID
+<Unit>  "
+ ::= { trPatternEntry 8 }
+
+--1.4.2.9.	 Yeşil dalga durum parametresi
+patternSync OBJECT-TYPE
+	SYNTAX INTEGER (0..2)
+	ACCESS read-write
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		0: Yeşil dalga uygulanmayacaktır.
+		1: Yeşil dalga uygulanacaktır.
+		2: Yeşil dalga ile ilgili bir değişiklik olmayacak.
+Mevcut duruma devam edilecektir.
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 9 }
+
+
+
+--1.4.2.10.	Yeşil dalga ofset parametresi
+patternOffsetTime OBJECT-TYPE
+	SYNTAX INTEGER (0..65535)
+	ACCESS read-write
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Yeşil dalga ofseti(tenth cinsinden)
+		65535 ise değişiklik istenmiyor. Yeşil dalga ofseti bağıl bir değerdir. Referans devre başlangıç anlarına göre ölçülür. Referans başlangıç zamanı cihazların yeşil dalga algoritmalarına göre değişebilir.
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 10 }
+
+--1.4.2.11.	 Faz sayısı parametresi
+patternStageCount OBJECT-TYPE
+	SYNTAX INTEGER (0..255)
+	ACCESS read-write
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Sinyal planındaki faz sayısı
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 11 }
+
+--1.4.2.12.	 Faz süresi parametresi
+patternStageTime OBJECT-TYPE
+	SYNTAX OCTET STRING
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+Her iki octet(2 byte) bir fazın yeşil süresine denk gelir. (tenth cinsinden)
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 12 }
+
+
+--1.4.2.13.	 Pattern sensör arıza parametresi
+patternStageSensorFailureMask OBJECT-TYPE
+	SYNTAX OCTET STRING
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+(Adaptif/uyarmalı çalışmada) belirtilen sensörlerde arıza olması durumunda sabit zamanlı çalışmaya dönülür.
+Birinci octet: Sensör 1 – 8
+İkinci octet : Sensör 9 – 16
+.
+.
+.
+	şeklinde devam eder.
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 13 }
+
+
+--1.4.2.14.	 Pattern plan başlangıç zaman parametresi
+patternStartDate OBJECT-TYPE
+	SYNTAX Counter
+	ACCESS read-write
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Plan değişkliğinin devreye gireceği zaman. 01.01.1970 00:00 (epoch) tarihinden itibaren geçen saniye sayısı
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 14 }
+
+--1.4.2.15.	 Pattern plan bitiş zaman parametresi
+patternEndDate OBJECT-TYPE
+	SYNTAX Counter
+	ACCESS read-write
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Plan değişikliğinin devre dışı kalacağı zaman. 01.01.1970 00:00 (epoch) tarihinden itibaren geçen saniye sayısı
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 15 }
+
+--1.4.2.16.	 Pattern yeşil dalga devre süresi parametresi
+patternGreenwaveCycleTime OBJECT-TYPE
+	SYNTAX INTEGER (0..65535)
+	ACCESS read-write
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+
+		Yeşil dalga devre süresi(tenth cinsinden)
+		65535 ise değiştirilmez.
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 16 }
+
+--1.4.2.17.	 Pattern yeşil dalga faz numara parametresi
+patternGreenwaveStageId OBJECT-TYPE
+	SYNTAX INTEGER (0..255)
+	ACCESS read-write
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+Yeşil dalga faz numarası. Yeşil dalga uygulaması belirtilen faz referans alınarak yapılır.
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 17 }
+
+--1.4.2.18.	 Pattern yeşil dalga faz numara parametresi
+patternGreenWaveReturnStageId OBJECT-TYPE
+	SYNTAX INTEGER (0..255)
+	ACCESS read-write
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+return phase
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 18 }
+
+--1.4.2.19.	 Pattern sensör durum parametresi
+patternSensorEnable OBJECT-TYPE
+	SYNTAX INTEGER (0..2)
+	ACCESS read-write
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Sensörleri devreye almak veya devre dışı bırakmak
+için kullanılır.
+0: Devre dışı
+1: Devrede
+2: Değişiklik yok.
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 19 }
+
+--1.4.2.20.	 Pattern sensör arıza parametresi
+patternSensorSupervision OBJECT-TYPE
+	SYNTAX INTEGER (0..255)
+	ACCESS read-write
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+Sensör arıza kontrolünü devreye almak veya devre dışı bırakmak
+için kullanılır.
+0: Devre dışı
+1: Devrede
+2: Değişiklik yok.
+
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 20 }
+
+--1.4.2.21.	 Pattern sinyal çıkış arıza durum parametresi
+patternOutputSupervision OBJECT-TYPE
+	SYNTAX INTEGER (0..255)
+	ACCESS read-write
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+Sinyal çıkışları arıza kontrolünü devreye almak veya devre dışı bırakmak
+için kullanılır.
+0: Devre dışı
+1: Devrede
+2: Değişiklik yok.
+
+<Object Identifier> KGM OID
+<Unit>  "
+::= { trPatternEntry 21 }
+
+--1.4.3.	Sinyal Planını Devreye Alma
+signalPlanUpgrade OBJECT-TYPE
+SYNTAX INTEGER (0..1)
+ACCESS read-write
+STATUS mandatory
+DESCRIPTION "<Definition>
+	 Sinyal planını devreye alır.
+<Object Identifier> KGM OID "
+::= {  coord 3 }
+
+
+
+
+--1.5.	Dedektör Parametreleri
+
+
+--1.5.1.	Dedektör modülleri durumu parametresi
+dedectorModuleStatus   OBJECT-TYPE
+	SYNTAX INTEGER (0..65535)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Dedektör modülü durum bilgisi yer alır.
+		Dedektör modülü grup numarasına göre 16 modül bilgisini içerir.
+		Bit = 0 ise modül çalışmıyor.
+		Bit = 1 ise modül çalışıyor.
+		Bit 15: Module 16
+		Bit 14: Module 15
+		Bit 13: Module 14
+		Bit 12: Module 13
+		Bit 11: Module 12
+		Bit 10: Module 11
+		Bit 9 : Module 10
+		Bit 8 : Module 9
+		Bit 7 : Module 8
+		Bit 6 : Module 7
+		Bit 5 : Module 6
+		Bit 4 : Module 5
+		Bit 3 : Module 4
+		Bit 2 : Module 3
+		Bit 1 : Module 2
+		Bit 0 : Module 1
+	<Object Identifier> 1.3.6.1.4.1.59873.4.2.1.1.14.1.2
+	<Unit>  "
+::= { dedectorModule  1 }
+
+
+otherModules OBJECT-TYPE
+SYNTAX INTEGER (1..65535)
+ACCESS read-only
+STATUS mandatory
+DESCRIPTION "<Definition> 
+s16 Bit.
+Dedektör ve sürücü modülü dışındaki kartların haberleşip haberleşmediği bilgisini verir. 
+<Object Identifier> KGM OID"
+::= {  dedectorModule 2    }
+
+
+--1.6.	Kullanıcı Parametreleri
+
+--Parametreler INFORM olacak.
+
+--1.6.1.	Maksimum Kullanıcı İşlem Sayısı
+maxUserOperations OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-only
+STATUS mandatory
+DESCRIPTION "<Definition>
+Maksimum kullanıcı işlem sayısına eşittir. userOperationsIndex maksimum değerini aşamaz
+<Object Identifier> KGM OID "
+::= { user 1  }
+
+--1.6.2.	Kullanıcı İşlem Tablosu
+userOperationsTable OBJECT-TYPE
+	SYNTAX SEQUENCE OF UserOperationsEntry
+	ACCESS not-accessible
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		 Kullanıcı işlemleri bilgilendirme tablosudur
+<TableType> static
+     <Object Identifier> KGM OID "
+::= { user 2 }
+
+userOperationsEntry		OBJECT-TYPE
+	SYNTAX UserOperationsEntry
+	ACCESS not-accessible
+	STATUS mandatory
+DESCRIPTION "<Definition> Kullaıcı işlemleri Entry’si
+<Object Identifier> KGM OID
+<Unit> "
+INDEX { userOperationsIndex }
+::= {  userOperationsTable 1 }
+
+UserOperationsEntry ::= SEQUENCE {
+	userOperationsIndex INTEGER,
+	userOperationsType INTEGER,
+ 	userOperationsTime Counter,
+	userOperationsULoginName OCTET STRING
+	}
+
+
+--1.6.2.1.	Kullanıcı işlemleri tablo indeks parametresi
+userOperationsIndex OBJECT-TYPE
+	SYNTAX INTEGER (1..255)
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition> Kullanıcı işlem tablo id bilgisi
+<Object Identifier> KGM OID
+<Unit>  "
+::= { userOperationsEntry 1 }
+
+--1.6.2.2.	Kullanıcı işlem tipi
+userOperationsType OBJECT-TYPE
+SYNTAX INTEGER {
+		none(0),
+		userAdded(1),
+		timeChanged(2),
+		outputRelaysEnabled(3),
+		outputRelaysDisabled(4),
+		userLogin(5),
+		userLogout(6),
+		modeChanged(7),
+		deviceParamatersChanged(8)        }
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+
+		userAdded: Kullanıcı eklendi
+		timeChanged: Kullanıcı tarih saat değiştirdi
+		outputRelaysEnabled: Çıkış rolesi devrede
+		outputRelaysDisabled: Çıkış rölesi devre dışı
+		userLogin: Kullanıcı sisteme giriş yaptı
+		userLogout: Kullanıcı sistemden çıkış yaptı
+		modeChanged: kullanıcı tarafından mod değiştirildi.
+		deviceParamatersChanged: cihaz paramatreleri değiştirildi.
+
+	<Object Identifier> KGM OID
+	<Unit> "
+::= { userOperationsEntry 2}
+
+--1.6.2.3.	İşlem zaman bilgisi
+userOperationsTime OBJECT-TYPE
+	SYNTAX Counter
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		Kullanıcının işlem yaptığı zamanın bilgisi.
+<Object Identifier> KGM OID
+<Unit>  "
+::= { userOperationsEntry 3}
+
+--1.6.2.4.	İşlem yapan kullanıcı bilgisi
+userOperationsULoginName OBJECT-TYPE
+	SYNTAX OCTET STRING
+	ACCESS read-only
+	STATUS mandatory
+	DESCRIPTION "<Definition>
+		İşlem yapan kullanıcının kullanıcı adı bilgisi.
+<Object Identifier> KGM OID
+<Unit>  "
+::= { userOperationsEntry 4}
+
+
+--1.6.3.	Kullanıcı Listesi
+ userListFileUpdate OBJECT-TYPE
+	SYNTAX INTEGER (0..1)
+	ACCESS read-only
+	STATUS mandatory
+DESCRIPTION "<Definition>
+	0 ise kullanıcı listesi güncellenemedi
+	1 ise kullanıcı listesi güncellendi
+<Object Identifier> KGM OID
+<Unit>  "
+::= { user 3}
+
+-- 1.7.	Custom Time Base Parametreleri
+
+maxCustomTimeBaseScheduleEntries OBJECT-TYPE
+SYNTAX INTEGER (1..65535)
+ACCESS read-only
+STATUS mandatory
+DESCRIPTION
+"<Definition>The value of this object specifies the maximum number
+of different entries supported by the device as shown by the
+number of rows in the customTimeBaseScheduleTable.
+<Unit>CustomTimeBaseScheduleEntry
+<Object Identifier>  "
+::= { customTimeBase 1 }
+
+-- 1.7.1 Time Base Schedule Table
+customTimeBaseScheduleTable OBJECT-TYPE
+SYNTAX SEQUENCE OF CustomTimeBaseScheduleEntry
+ACCESS not-accessible
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<TableType> static
+<Object Identifier> "
+::= { customTimeBase 2 }
+
+customTimeBaseScheduleEntry OBJECT-TYPE
+SYNTAX CustomTimeBaseScheduleEntry
+ACCESS not-accessible
+STATUS mandatory
+DESCRIPTION
+"<Definition>Event Parameters for the time based schedule
+programming of the device.
+<Object Identifier> 1.3.6.1.4.1.1206.4.2.6.3.3.2.1"
+INDEX { customTimeBaseScheduleSubJuncNo, customTimeBaseScheduleNumber }
+::= { customTimeBaseScheduleTable 1 }
+CustomTimeBaseScheduleEntry ::= SEQUENCE {
+	customTimeBaseScheduleSubJuncNo INTEGER,
+	customTimeBaseScheduleNumber INTEGER,
+	customTimeBaseScheduleStartMonth INTEGER,
+	customTimeBaseScheduleStartDay INTEGER,
+	customTimeBaseScheduleEndMonth INTEGER,
+	customTimeBaseScheduleEndDay INTEGER,
+	customTimeBaseScheduleWeekIndex INTEGER
+}
+
+--  1.7.2.1 Time Base Schedule Number Sub Junction Number
+customTimeBaseScheduleSubJuncNo OBJECT-TYPE
+SYNTAX INTEGER (1..255 )
+ACCESS read-only
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customTimeBaseScheduleEntry 1 }
+
+--  1.7.2.1 Time Base Schedule Number Parameter
+customTimeBaseScheduleNumber OBJECT-TYPE
+SYNTAX INTEGER (1..255 )
+ACCESS read-only
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customTimeBaseScheduleEntry 2 }
+
+
+--  1.7.2.2 Time Base Schedule Start Month of Year Parameter
+customTimeBaseScheduleStartMonth OBJECT-TYPE
+SYNTAX INTEGER (0..255)
+ACCESS read-write
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customTimeBaseScheduleEntry 3 }
+
+--  1.7.2.3 Time Base Schedule Start Day of Month
+customTimeBaseScheduleStartDay OBJECT-TYPE
+SYNTAX INTEGER (0..255)
+ACCESS read-write
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customTimeBaseScheduleEntry 4 }
+
+--  1.7.2.4 Time Base Schedule End Month of Year Parameter
+customTimeBaseScheduleEndMonth OBJECT-TYPE
+SYNTAX INTEGER (0..255)
+ACCESS read-write
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customTimeBaseScheduleEntry 5 }
+
+--  1.7.2.5 Time Base Schedule End Day of Month
+customTimeBaseScheduleEndDay OBJECT-TYPE
+SYNTAX INTEGER (0..255)
+ACCESS read-write
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customTimeBaseScheduleEntry 6 }
+
+
+--  1.7.2.6 Time Base Schedule End Day of Month
+customTimeBaseScheduleWeekIndex OBJECT-TYPE
+SYNTAX INTEGER (0..255)
+ACCESS read-write
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customTimeBaseScheduleEntry 7 }
+
+
+--  1.7.3 Maximum Number of Day Plans—Parameter
+maxCustomDayPlans OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-only
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Unit>DayPlan
+<Object Identifier> "
+::= { customTimeBase 3 }
+
+
+--  1.7.4 Maximum Number of Day Plan Event—Parameter
+maxCustomDayPlanEvents OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-only
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Unit>DayPlan
+<Object Identifier> "
+::= { customTimeBase 4 }
+
+
+--  1.7.5 Day Plan Table
+customTimeBaseDayPlanTable OBJECT-TYPE
+SYNTAX SEQUENCE OF CustomTimeBaseDayPlanEntry
+ACCESS not-accessible
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<TableType> static
+<Object Identifier> "
+::= { customTimeBase 5 }
+
+customTimeBaseDayPlanEntry OBJECT-TYPE
+SYNTAX CustomTimeBaseDayPlanEntry
+ACCESS not-accessible
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+INDEX { customDayPlanSubJuncNo, customDayPlanNumber, customDayPlanEventNumber}
+::= { customTimeBaseDayPlanTable 1 }
+CustomTimeBaseDayPlanEntry ::= SEQUENCE {
+	customDayPlanSubJuncNo INTEGER,
+	customDayPlanNumber INTEGER,
+	customDayPlanEventNumber INTEGER,
+	customDayPlanHour INTEGER,
+	customDayPlanMinute INTEGER,
+	customDayPlanMode INTEGER,
+	customDayPlanStruct INTEGER,
+	customDayPlanPlan INTEGER,
+	customDayPlanSync INTEGER,
+	customDayPlanDist INTEGER,
+	customDayPlanActionNumberOID OBJECT IDENTIFIER 
+}
+
+--  1.7.5.1 Day Plan Sub Junction Number
+customDayPlanSubJuncNo OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-only
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customTimeBaseDayPlanEntry 1 }
+
+
+--  1.7.5.1 Day Plan Number
+customDayPlanNumber OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-only
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customTimeBaseDayPlanEntry 2 }
+
+--  1.7.5.2 Day Plan Number
+customDayPlanEventNumber OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-only
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customTimeBaseDayPlanEntry 3 }
+
+--  1.7.5.3 Day Plan Number
+customDayPlanHour OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-write
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customTimeBaseDayPlanEntry 4 }
+
+--  1.7.5.4 Day Plan Number
+customDayPlanMinute OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-write
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customTimeBaseDayPlanEntry 5 }
+
+--  1.7.5.4 Day Plan Number
+customDayPlanMode OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-write
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customTimeBaseDayPlanEntry 6 }
+
+--  1.7.5.4 Day Plan Number
+customDayPlanStruct OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-write
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customTimeBaseDayPlanEntry 7 }
+
+--  1.7.5.4 Day Plan Number
+customDayPlanPlan OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-write
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customTimeBaseDayPlanEntry 8 }
+
+--  1.7.5.4 Day Plan Number
+customDayPlanSync OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-write
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customTimeBaseDayPlanEntry 9 }
+
+--  1.7.5.4 Day Plan Number
+customDayPlanDist OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-write
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customTimeBaseDayPlanEntry 10 }
+
+--  1.7.5.5 Day Plan Number
+customDayPlanActionNumberOID OBJECT-TYPE
+SYNTAX OBJECT IDENTIFIER
+ACCESS read-write
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+DEFVAL {null}
+::= { customTimeBaseDayPlanEntry 11 }
+
+--  1.7.6 Maximum Number of Special Day
+maxSpecialDay OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-only
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Unit>DayPlan
+<Object Identifier> "
+::= { customTimeBase 6 }
+
+--  1.7.7 Special Day Table
+customSpecialDayTable OBJECT-TYPE
+SYNTAX SEQUENCE OF CustomSpecialDayEntry
+ACCESS not-accessible
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<TableType> static
+<Object Identifier> "
+::= { customTimeBase 7 }
+
+customSpecialDayEntry OBJECT-TYPE
+SYNTAX CustomSpecialDayEntry
+ACCESS not-accessible
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+INDEX { customSpecialDaySubJunctionNo, customSpecialDayNumber}
+::= { customSpecialDayTable 1 }
+CustomSpecialDayEntry ::= SEQUENCE {
+	customSpecialDaySubJunctionNo INTEGER,
+	customSpecialDayNumber INTEGER,
+	customSpecialDayMonth INTEGER,
+	customSpecialDayDay INTEGER,
+	customSpecialDayIndex INTEGER
+}
+
+--  1.7.7.1 Special Day Sub Junction No
+customSpecialDaySubJunctionNo OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-only
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customSpecialDayEntry 1 }
+
+--  1.7.7.2 Special Day Number
+customSpecialDayNumber OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-only
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customSpecialDayEntry 2 }
+
+--  1.7.7.3 Special Day Month Day
+customSpecialDayMonth OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-write
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customSpecialDayEntry 3 }
+
+--  1.7.7.4 Special Day Month Day
+customSpecialDayDay OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-write
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customSpecialDayEntry 4 }
+
+--  1.7.7.5 Special Day Index
+customSpecialDayIndex OBJECT-TYPE
+SYNTAX INTEGER (1..255)
+ACCESS read-write
+STATUS mandatory
+DESCRIPTION
+"<Definition>
+<Object Identifier> "
+::= { customSpecialDayEntry 5 }
+
+
+---
+--- Notifications/Traps
+---
+trafficLightFaultTrap NOTIFICATION-TYPE
+    OBJECTS     { trafficLightFaultIndex, trafficLightFaultChannelNumber, trafficLightFaultGreenStatus,  trafficLightFaultYellowStatus, trafficLightFaultRedStatus}
+    STATUS      current
+    DESCRIPTION
+        "Generated 
+        "
+    ::= { myNotifications 1 }
+
+cabinetDevTrap NOTIFICATION-TYPE
+    OBJECTS     { cabinetEnvironDeviceType, cabinetEnvironDeviceOnStatus}
+    STATUS      current
+    DESCRIPTION
+        "Generated 
+        "
+    ::= { myNotifications 2 }
+
+ ascLineVoltsTrap NOTIFICATION-TYPE
+    OBJECTS     { ascLineVolts}
+    STATUS      current
+    DESCRIPTION
+        "Generated 
+        "
+    ::= { myNotifications 3 }
+
+ detectorVehicleTrap NOTIFICATION-TYPE
+    OBJECTS     { vehicleDetectorStatusGroupNumber, vehicleDetectorStatusGroupAlarms}
+    STATUS      current
+    DESCRIPTION
+        "Generated 
+        "
+    ::= { myNotifications 4 }
+
+ detectorPedestrianTrap NOTIFICATION-TYPE
+    OBJECTS     { pedestrianDetectorStatusGroupNumber, pedestrianDetectorStatusGroupAlarms}
+    STATUS      current
+    DESCRIPTION
+        "Generated 
+        "
+    ::= { myNotifications 5 }
+    
+ driverModuleTrap NOTIFICATION-TYPE
+    OBJECTS     { driverModuleStatus}
+    STATUS      current
+    DESCRIPTION
+        "Generated 
+        "
+    ::= { myNotifications 6 }
+
+ signalStateExecModeTrap NOTIFICATION-TYPE
+    OBJECTS     { signalStateExecMode}
+    STATUS      current
+    DESCRIPTION
+        "Generated 
+        "
+    ::= { myNotifications 7 }
+    
+END
+

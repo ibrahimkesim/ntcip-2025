@@ -1,0 +1,9 @@
+#define SOCKET_PORT         15001
+#define SLEEP_5_MS          (5*1000)
+
+enum{
+    SOCKET_STATE_INIT,
+    SOCKET_STATE_DATA_TRANSACTION,
+    SOCKET_STATE_CLOSE,
+    NUM_OF_SOCKET_STATE
+};
